@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import os
 import shutil
-import random
+from datetime import datetime
 
 def split_dataset():
     try:
@@ -69,6 +69,42 @@ def split_dataset():
         messagebox.showinfo("Success", "Dataset split completed.")
     except Exception as e:
         messagebox.showerror("Error", str(e))
+        
+# Function to merge dataset
+def merge_dataset():
+    try:
+        folders = []
+        for subset in ["train", "valid", "test"]:
+            folder = filedialog.askdirectory(title=f"Select {subset} Folder")
+            if not folder:
+                messagebox.showerror("Error", f"No folder selected for {subset}.")
+                return
+            folders.append(folder)
+
+        root_directory = filedialog.askdirectory(title="Select Root Directory for Merged Dataset")
+        if not root_directory:
+            messagebox.showerror("Error", "No root directory selected.")
+            return
+
+        # Generate a folder name with the current date
+        merged_folder_name = f"merged_{datetime.now().strftime('%Y-%m-%d')}"
+        merged_folder = os.path.join(root_directory, merged_folder_name)
+        images_output = os.path.join(merged_folder, "images")
+        labels_output = os.path.join(merged_folder, "labels")
+        os.makedirs(images_output, exist_ok=True)
+        os.makedirs(labels_output, exist_ok=True)
+
+        for folder in folders:
+            for subset in ["images", "labels"]:
+                subset_folder = os.path.join(folder, subset)
+                for item in os.listdir(subset_folder):
+                    source_path = os.path.join(subset_folder, item)
+                    target_path = os.path.join(images_output if subset == "images" else labels_output, item)
+                    shutil.copy(source_path, target_path)
+
+        messagebox.showinfo("Success", f"Merged dataset created at: {merged_folder}")
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
 
 # GUI Setup
 root = tk.Tk()
@@ -92,6 +128,13 @@ valid_ratio_entry.insert(0, "0.2")
 
 split_button = tk.Button(split_frame, text="Split Dataset", command=split_dataset)
 split_button.grid(row=2, column=0, columnspan=2, pady=5)
+
+# Merge Frame
+merge_frame = tk.LabelFrame(root, text="Merge Dataset", padx=10, pady=10)
+merge_frame.pack(fill="x", pady=10)
+
+merge_button = tk.Button(merge_frame, text="Merge Dataset", command=merge_dataset)
+merge_button.pack(pady=5)
 
 # Status Label
 status_label = tk.Label(root, text="Status: Idle", relief="sunken", anchor="w")
